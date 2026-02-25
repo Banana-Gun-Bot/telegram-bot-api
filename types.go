@@ -1428,6 +1428,10 @@ type InlineKeyboardButton struct {
 	//
 	// optional
 	Pay bool `json:"pay,omitempty"`
+	// Style of the button. Must be one of “danger” (red), “success” (green) or “primary” (blue). If omitted, then an app-specific style is used
+	//
+	// optional
+	Style string `json:"style,omitempty"`
 }
 
 // LoginURL represents a parameter of the inline keyboard button used to
