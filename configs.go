@@ -998,6 +998,9 @@ type EditMessageTextConfig struct {
 	ParseMode             string
 	Entities              []MessageEntity
 	DisableWebPagePreview bool
+	// RichMessage, when set, edits the message into a rich message. Text is
+	// then optional.
+	RichMessage *InputRichMessage
 }
 
 func (config EditMessageTextConfig) params() (Params, error) {
@@ -1006,10 +1009,19 @@ func (config EditMessageTextConfig) params() (Params, error) {
 		return params, err
 	}
 
-	params["text"] = config.Text
+	// A rich message carries its own content, so text is optional; for a plain
+	// text edit text is required and sent even when empty.
+	if config.RichMessage != nil {
+		params.AddNonEmpty("text", config.Text)
+	} else {
+		params["text"] = config.Text
+	}
 	params.AddNonEmpty("parse_mode", config.ParseMode)
 	params.AddBool("disable_web_page_preview", config.DisableWebPagePreview)
-	err = params.AddInterface("entities", config.Entities)
+	if err = params.AddInterface("entities", config.Entities); err != nil {
+		return params, err
+	}
+	err = params.AddInterface("rich_message", config.RichMessage)
 
 	return params, err
 }
@@ -2567,4 +2579,94 @@ func prepareInputMediaForFiles(inputMedia []interface{}) []RequestFile {
 	}
 
 	return files
+}
+
+// RichMessageConfig contains information about a sendRichMessage request.
+type RichMessageConfig struct {
+	// BusinessConnectionID is the unique identifier of the business connection
+	// on behalf of which the message will be sent.
+	BusinessConnectionID string
+	ChatID               int64 // required if ChannelUsername is empty
+	ChannelUsername      string
+	ThreadID             int
+	// DirectMessagesTopicID is the identifier of the direct messages topic to
+	// which the message will be sent; required for direct messages chats.
+	DirectMessagesTopicID int
+	// RichMessage is the message to be sent. Required.
+	RichMessage         InputRichMessage
+	DisableNotification bool
+	ProtectContent      bool
+	// AllowPaidBroadcast allows up to 1000 messages per second for a fee.
+	AllowPaidBroadcast bool
+	// MessageEffectID is the unique identifier of the message effect to be
+	// added; for private chats only.
+	MessageEffectID string
+	// SuggestedPostParameters, if set, is JSON-serialized; for direct messages
+	// chats only.
+	SuggestedPostParameters interface{}
+	// ReplyParameters describes the message to reply to, if set.
+	ReplyParameters interface{}
+	// ReplyMarkup is additional interface options (inline keyboard, custom
+	// reply keyboard, instructions to remove a reply keyboard, or to force a
+	// reply).
+	ReplyMarkup interface{}
+}
+
+func (config RichMessageConfig) params() (Params, error) {
+	params := make(Params)
+
+	params.AddNonEmpty("business_connection_id", config.BusinessConnectionID)
+	params.AddFirstValid("chat_id", config.ChatID, config.ChannelUsername)
+	params.AddNonZero("message_thread_id", config.ThreadID)
+	params.AddNonZero("direct_messages_topic_id", config.DirectMessagesTopicID)
+	params.AddBool("disable_notification", config.DisableNotification)
+	params.AddBool("protect_content", config.ProtectContent)
+	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
+	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
+
+	if err := params.AddInterface("rich_message", config.RichMessage); err != nil {
+		return params, err
+	}
+	if err := params.AddInterface("suggested_post_parameters", config.SuggestedPostParameters); err != nil {
+		return params, err
+	}
+	if err := params.AddInterface("reply_parameters", config.ReplyParameters); err != nil {
+		return params, err
+	}
+	err := params.AddInterface("reply_markup", config.ReplyMarkup)
+
+	return params, err
+}
+
+func (config RichMessageConfig) method() string {
+	return "sendRichMessage"
+}
+
+// RichMessageDraftConfig contains information about a sendRichMessageDraft
+// request. It streams a partial rich message to a private chat as a temporary
+// 30-second preview; call sendRichMessage with the complete message to persist
+// it. The method returns True on success, so send it with bot.Request.
+type RichMessageDraftConfig struct {
+	ChatID   int64 // required, private chat only
+	ThreadID int
+	// DraftID is the unique identifier of the message draft; must be non-zero.
+	// Changes to drafts with the same identifier are animated.
+	DraftID int64
+	// RichMessage is the partial message to be streamed. Required.
+	RichMessage InputRichMessage
+}
+
+func (config RichMessageDraftConfig) params() (Params, error) {
+	params := make(Params)
+
+	params.AddNonZero64("chat_id", config.ChatID)
+	params.AddNonZero("message_thread_id", config.ThreadID)
+	params.AddNonZero64("draft_id", config.DraftID)
+	err := params.AddInterface("rich_message", config.RichMessage)
+
+	return params, err
+}
+
+func (config RichMessageDraftConfig) method() string {
+	return "sendRichMessageDraft"
 }

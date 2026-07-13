@@ -140,10 +140,10 @@ func NewTopicDocument(chatID int64, topicID int, file RequestFileData) DocumentC
 	return DocumentConfig{
 		BaseFile: BaseFile{
 			BaseChat: BaseChat{
-				ChatID: chatID,
+				ChatID:   chatID,
 				ThreadID: topicID,
 			},
-			File:     file,
+			File: file,
 		},
 	}
 }
@@ -1012,4 +1012,32 @@ func ValidateWebAppData(token, telegramInitData string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// NewRichMessage creates a new sendRichMessage config using HTML-formatted
+// content for the given chat.
+func NewRichMessage(chatID int64, html string) RichMessageConfig {
+	return RichMessageConfig{
+		ChatID:      chatID,
+		RichMessage: InputRichMessage{HTML: html},
+	}
+}
+
+// NewRichMessageMarkdown creates a new sendRichMessage config using
+// Markdown-formatted content for the given chat.
+func NewRichMessageMarkdown(chatID int64, markdown string) RichMessageConfig {
+	return RichMessageConfig{
+		ChatID:      chatID,
+		RichMessage: InputRichMessage{Markdown: markdown},
+	}
+}
+
+// NewRichMessageDraft creates a new sendRichMessageDraft config that streams
+// HTML-formatted partial content to a private chat under the given draft id.
+func NewRichMessageDraft(chatID int64, draftID int64, html string) RichMessageDraftConfig {
+	return RichMessageDraftConfig{
+		ChatID:      chatID,
+		DraftID:     draftID,
+		RichMessage: InputRichMessage{HTML: html},
+	}
 }
