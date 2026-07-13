@@ -636,6 +636,11 @@ type Message struct {
 	//
 	// optional
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	// RichMessage is the rich formatted content of the message, when the
+	// message was sent as a rich message.
+	//
+	// optional
+	RichMessage *RichMessage `json:"rich_message,omitempty"`
 }
 
 // Time converts the message timestamp into a Time.
@@ -3333,4 +3338,537 @@ type PreCheckoutQuery struct {
 	//
 	// optional
 	OrderInfo *OrderInfo `json:"order_info,omitempty"`
+}
+
+// ---------------------------------------------------------------------------
+// Rich Messages (Bot API 10.1). Sending is done through InputRichMessage using
+// HTML or Markdown; the received content graph (RichText / RichBlock) is kept
+// as raw JSON and can be decoded into the typed RichText* / RichBlock* structs
+// below as needed.
+// ---------------------------------------------------------------------------
+
+// RichText is a rich formatted text node. It is polymorphic: the raw JSON is
+// either a plain String, an Array of RichText, or one of the RichText* typed
+// objects (discriminated by their "type" field). It is kept as raw JSON;
+// unmarshal it into the appropriate concrete type when you need its contents.
+type RichText = json.RawMessage
+
+// RichBlock is a block in a rich formatted message. The raw JSON is one of the
+// RichBlock* typed objects, discriminated by its "type" field. Unmarshal it
+// into the matching concrete type when you need its contents.
+type RichBlock = json.RawMessage
+
+// RichMessage represents a rich formatted message.
+type RichMessage struct {
+	// Blocks is the content of the message.
+	Blocks []RichBlock `json:"blocks"`
+	// IsRtl is True, if the rich message must be shown right-to-left.
+	//
+	// optional
+	IsRtl bool `json:"is_rtl,omitempty"`
+}
+
+// InputRichMessage describes a rich message to be sent. Exactly one of the
+// fields HTML or Markdown must be used.
+type InputRichMessage struct {
+	// HTML is the content of the rich message described using HTML formatting.
+	//
+	// optional
+	HTML string `json:"html,omitempty"`
+	// Markdown is the content of the rich message described using Markdown
+	// formatting.
+	//
+	// optional
+	Markdown string `json:"markdown,omitempty"`
+	// IsRtl - pass True if the rich message must be shown right-to-left.
+	//
+	// optional
+	IsRtl bool `json:"is_rtl,omitempty"`
+	// SkipEntityDetection - pass True to skip automatic detection of entities
+	// (e.g. URLs, email addresses, mentions, hashtags, cashtags, bot commands
+	// or phone numbers) in the text.
+	//
+	// optional
+	SkipEntityDetection bool `json:"skip_entity_detection,omitempty"`
+}
+
+// InputRichMessageContent represents the content of a rich message to be sent
+// as the result of an inline query.
+type InputRichMessageContent struct {
+	// RichMessage is the message to be sent.
+	RichMessage InputRichMessage `json:"rich_message"`
+}
+
+// RichTextBold is a bold text.
+type RichTextBold struct {
+	Type string   `json:"type"` // always "bold"
+	Text RichText `json:"text"`
+}
+
+// RichTextItalic is an italicized text.
+type RichTextItalic struct {
+	Type string   `json:"type"` // always "italic"
+	Text RichText `json:"text"`
+}
+
+// RichTextUnderline is an underlined text.
+type RichTextUnderline struct {
+	Type string   `json:"type"` // always "underline"
+	Text RichText `json:"text"`
+}
+
+// RichTextStrikethrough is a strikethrough text.
+type RichTextStrikethrough struct {
+	Type string   `json:"type"` // always "strikethrough"
+	Text RichText `json:"text"`
+}
+
+// RichTextSpoiler is a text covered by a spoiler.
+type RichTextSpoiler struct {
+	Type string   `json:"type"` // always "spoiler"
+	Text RichText `json:"text"`
+}
+
+// RichTextDateTime is a formatted date and time.
+type RichTextDateTime struct {
+	Type string   `json:"type"` // always "date_time"
+	Text RichText `json:"text"`
+	// UnixTime is the Unix time associated with the entity.
+	UnixTime int64 `json:"unix_time"`
+	// DateTimeFormat defines the formatting of the date and time.
+	DateTimeFormat string `json:"date_time_format"`
+}
+
+// RichTextTextMention is a mention of a Telegram user by their identifier.
+type RichTextTextMention struct {
+	Type string   `json:"type"` // always "text_mention"
+	Text RichText `json:"text"`
+	// User is the mentioned user.
+	User User `json:"user"`
+}
+
+// RichTextSubscript is a subscript text.
+type RichTextSubscript struct {
+	Type string   `json:"type"` // always "subscript"
+	Text RichText `json:"text"`
+}
+
+// RichTextSuperscript is a superscript text.
+type RichTextSuperscript struct {
+	Type string   `json:"type"` // always "superscript"
+	Text RichText `json:"text"`
+}
+
+// RichTextMarked is a marked text.
+type RichTextMarked struct {
+	Type string   `json:"type"` // always "marked"
+	Text RichText `json:"text"`
+}
+
+// RichTextCode is a monowidth text.
+type RichTextCode struct {
+	Type string   `json:"type"` // always "code"
+	Text RichText `json:"text"`
+}
+
+// RichTextCustomEmoji is a custom emoji.
+type RichTextCustomEmoji struct {
+	Type string `json:"type"` // always "custom_emoji"
+	// CustomEmojiID is the unique identifier of the custom emoji.
+	CustomEmojiID string `json:"custom_emoji_id"`
+	// AlternativeText is the alternative emoji for the custom emoji.
+	AlternativeText string `json:"alternative_text"`
+}
+
+// RichTextMathematicalExpression is a mathematical expression.
+type RichTextMathematicalExpression struct {
+	Type string `json:"type"` // always "mathematical_expression"
+	// Expression is the expression in LaTeX format.
+	Expression string `json:"expression"`
+}
+
+// RichTextUrl is a text with a link.
+type RichTextUrl struct {
+	Type string   `json:"type"` // always "url"
+	Text RichText `json:"text"`
+	// URL of the link.
+	URL string `json:"url"`
+}
+
+// RichTextEmailAddress is a text with an email address.
+type RichTextEmailAddress struct {
+	Type string   `json:"type"` // always "email_address"
+	Text RichText `json:"text"`
+	// EmailAddress is the email address.
+	EmailAddress string `json:"email_address"`
+}
+
+// RichTextPhoneNumber is a text with a phone number.
+type RichTextPhoneNumber struct {
+	Type string   `json:"type"` // always "phone_number"
+	Text RichText `json:"text"`
+	// PhoneNumber is the phone number.
+	PhoneNumber string `json:"phone_number"`
+}
+
+// RichTextBankCardNumber is a text with a bank card number.
+type RichTextBankCardNumber struct {
+	Type string   `json:"type"` // always "bank_card_number"
+	Text RichText `json:"text"`
+	// BankCardNumber is the bank card number.
+	BankCardNumber string `json:"bank_card_number"`
+}
+
+// RichTextMention is a mention by a username.
+type RichTextMention struct {
+	Type string   `json:"type"` // always "mention"
+	Text RichText `json:"text"`
+	// Username is the username.
+	Username string `json:"username"`
+}
+
+// RichTextHashtag is a hashtag.
+type RichTextHashtag struct {
+	Type string   `json:"type"` // always "hashtag"
+	Text RichText `json:"text"`
+	// Hashtag is the hashtag.
+	Hashtag string `json:"hashtag"`
+}
+
+// RichTextCashtag is a cashtag.
+type RichTextCashtag struct {
+	Type string   `json:"type"` // always "cashtag"
+	Text RichText `json:"text"`
+	// Cashtag is the cashtag.
+	Cashtag string `json:"cashtag"`
+}
+
+// RichTextBotCommand is a bot command.
+type RichTextBotCommand struct {
+	Type string   `json:"type"` // always "bot_command"
+	Text RichText `json:"text"`
+	// BotCommand is the bot command.
+	BotCommand string `json:"bot_command"`
+}
+
+// RichTextAnchor is an anchor.
+type RichTextAnchor struct {
+	Type string `json:"type"` // always "anchor"
+	// Name is the name of the anchor.
+	Name string `json:"name"`
+}
+
+// RichTextAnchorLink is a link to an anchor.
+type RichTextAnchorLink struct {
+	Type string   `json:"type"` // always "anchor_link"
+	Text RichText `json:"text"`
+	// AnchorName is the name of the anchor. If empty, then the link brings back
+	// to the top of the message.
+	AnchorName string `json:"anchor_name"`
+}
+
+// RichTextReference is a reference.
+type RichTextReference struct {
+	Type string   `json:"type"` // always "reference"
+	Text RichText `json:"text"`
+	// Name is the name of the reference.
+	Name string `json:"name"`
+}
+
+// RichTextReferenceLink is a link to a reference.
+type RichTextReferenceLink struct {
+	Type string   `json:"type"` // always "reference_link"
+	Text RichText `json:"text"`
+	// ReferenceName is the name of the reference.
+	ReferenceName string `json:"reference_name"`
+}
+
+// RichBlockCaption is the caption of a rich formatted block.
+type RichBlockCaption struct {
+	// Text is the block caption.
+	Text RichText `json:"text"`
+	// Credit is the block credit which corresponds to the HTML tag <cite>.
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
+// RichBlockTableCell is a cell in a table.
+type RichBlockTableCell struct {
+	// Text in the cell. If omitted, then the cell is invisible.
+	//
+	// optional
+	Text RichText `json:"text,omitempty"`
+	// IsHeader is True, if the cell is a header cell.
+	//
+	// optional
+	IsHeader bool `json:"is_header,omitempty"`
+	// Colspan is the number of columns the cell spans if it is bigger than 1.
+	//
+	// optional
+	Colspan int `json:"colspan,omitempty"`
+	// Rowspan is the number of rows the cell spans if it is bigger than 1.
+	//
+	// optional
+	Rowspan int `json:"rowspan,omitempty"`
+	// Align is the horizontal cell content alignment; one of "left", "center"
+	// or "right".
+	//
+	// optional
+	Align string `json:"align,omitempty"`
+	// Valign is the vertical cell content alignment; one of "top", "middle" or
+	// "bottom".
+	//
+	// optional
+	Valign string `json:"valign,omitempty"`
+}
+
+// RichBlockListItem is an item of a list.
+type RichBlockListItem struct {
+	// Label of the item.
+	Label string `json:"label"`
+	// Blocks is the content of the item.
+	Blocks []RichBlock `json:"blocks"`
+	// HasCheckbox is True, if the item has a checkbox.
+	//
+	// optional
+	HasCheckbox bool `json:"has_checkbox,omitempty"`
+	// IsChecked is True, if the item has a checked checkbox.
+	//
+	// optional
+	IsChecked bool `json:"is_checked,omitempty"`
+	// Value for ordered lists, the numeric value of the item label.
+	//
+	// optional
+	Value int `json:"value,omitempty"`
+	// Type for ordered lists, the type of the item label; one of "a", "A", "i",
+	// "I" or "1".
+	//
+	// optional
+	Type string `json:"type,omitempty"`
+}
+
+// RichBlockParagraph is a text paragraph (HTML tag <p>).
+type RichBlockParagraph struct {
+	Type string   `json:"type"` // always "paragraph"
+	Text RichText `json:"text"`
+}
+
+// RichBlockSectionHeading is a section heading (HTML tags <h1>..<h6>).
+type RichBlockSectionHeading struct {
+	Type string   `json:"type"` // always "heading"
+	Text RichText `json:"text"`
+	// Size is the relative size of the text font; 1-6, 1 is the largest.
+	Size int `json:"size"`
+}
+
+// RichBlockPreformatted is a preformatted text block (HTML tags <pre> <code>).
+type RichBlockPreformatted struct {
+	Type string   `json:"type"` // always "pre"
+	Text RichText `json:"text"`
+	// Language is the programming language of the text.
+	//
+	// optional
+	Language string `json:"language,omitempty"`
+}
+
+// RichBlockFooter is a footer (HTML tag <footer>).
+type RichBlockFooter struct {
+	Type string   `json:"type"` // always "footer"
+	Text RichText `json:"text"`
+}
+
+// RichBlockDivider is a divider (HTML tag <hr/>).
+type RichBlockDivider struct {
+	Type string `json:"type"` // always "divider"
+}
+
+// RichBlockMathematicalExpression is a block with a LaTeX mathematical
+// expression (custom HTML tag <tg-math-block>).
+type RichBlockMathematicalExpression struct {
+	Type string `json:"type"` // always "mathematical_expression"
+	// Expression is the mathematical expression in LaTeX format.
+	Expression string `json:"expression"`
+}
+
+// RichBlockAnchor is a block with an anchor (HTML tag <a> with attribute name).
+type RichBlockAnchor struct {
+	Type string `json:"type"` // always "anchor"
+	// Name is the name of the anchor.
+	Name string `json:"name"`
+}
+
+// RichBlockList is a list of blocks (HTML tag <ul> or <ol>).
+type RichBlockList struct {
+	Type string `json:"type"` // always "list"
+	// Items of the list.
+	Items []RichBlockListItem `json:"items"`
+}
+
+// RichBlockBlockQuotation is a block quotation (HTML tag <blockquote>).
+type RichBlockBlockQuotation struct {
+	Type string `json:"type"` // always "blockquote"
+	// Blocks is the content of the block.
+	Blocks []RichBlock `json:"blocks"`
+	// Credit of the block.
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
+// RichBlockPullQuotation is a quotation with centered text (HTML tag <aside>).
+type RichBlockPullQuotation struct {
+	Type string   `json:"type"` // always "pullquote"
+	Text RichText `json:"text"`
+	// Credit of the block.
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
+// RichBlockCollage is a collage (custom HTML tag <tg-collage>).
+type RichBlockCollage struct {
+	Type string `json:"type"` // always "collage"
+	// Blocks are the elements of the collage.
+	Blocks []RichBlock `json:"blocks"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockSlideshow is a slideshow (custom HTML tag <tg-slideshow>).
+type RichBlockSlideshow struct {
+	Type string `json:"type"` // always "slideshow"
+	// Blocks are the elements of the slideshow.
+	Blocks []RichBlock `json:"blocks"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockTable is a table (HTML tag <table>).
+type RichBlockTable struct {
+	Type string `json:"type"` // always "table"
+	// Cells of the table.
+	Cells [][]RichBlockTableCell `json:"cells"`
+	// IsBordered is True, if the table has borders.
+	//
+	// optional
+	IsBordered bool `json:"is_bordered,omitempty"`
+	// IsStriped is True, if the table is striped.
+	//
+	// optional
+	IsStriped bool `json:"is_striped,omitempty"`
+	// Caption of the table.
+	//
+	// optional
+	Caption RichText `json:"caption,omitempty"`
+}
+
+// RichBlockDetails is an expandable block for details disclosure (HTML tag
+// <details>).
+type RichBlockDetails struct {
+	Type string `json:"type"` // always "details"
+	// Summary is the always shown summary of the block.
+	Summary RichText `json:"summary"`
+	// Blocks is the content of the block.
+	Blocks []RichBlock `json:"blocks"`
+	// IsOpen is True, if the content of the block is visible by default.
+	//
+	// optional
+	IsOpen bool `json:"is_open,omitempty"`
+}
+
+// RichBlockMap is a block with a map (custom HTML tag <tg-map>).
+type RichBlockMap struct {
+	Type string `json:"type"` // always "map"
+	// Location of the center of the map.
+	Location Location `json:"location"`
+	// Zoom is the map zoom level; 13-20.
+	Zoom int `json:"zoom"`
+	// Width is the expected width of the map.
+	Width int `json:"width"`
+	// Height is the expected height of the map.
+	Height int `json:"height"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockAnimation is a block with an animation (HTML tag <video>).
+type RichBlockAnimation struct {
+	Type string `json:"type"` // always "animation"
+	// Animation is the animation.
+	Animation Animation `json:"animation"`
+	// HasSpoiler is True, if the media preview is covered by a spoiler animation.
+	//
+	// optional
+	HasSpoiler bool `json:"has_spoiler,omitempty"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockAudio is a block with a music file (HTML tag <audio>).
+type RichBlockAudio struct {
+	Type string `json:"type"` // always "audio"
+	// Audio is the audio.
+	Audio Audio `json:"audio"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockPhoto is a block with a photo (HTML tag <img>).
+type RichBlockPhoto struct {
+	Type string `json:"type"` // always "photo"
+	// Photo is the available sizes of the photo.
+	Photo []PhotoSize `json:"photo"`
+	// HasSpoiler is True, if the media preview is covered by a spoiler animation.
+	//
+	// optional
+	HasSpoiler bool `json:"has_spoiler,omitempty"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockVideo is a block with a video (HTML tag <video>).
+type RichBlockVideo struct {
+	Type string `json:"type"` // always "video"
+	// Video is the video.
+	Video Video `json:"video"`
+	// HasSpoiler is True, if the media preview is covered by a spoiler animation.
+	//
+	// optional
+	HasSpoiler bool `json:"has_spoiler,omitempty"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockVoiceNote is a block with a voice note (HTML tag <audio>).
+type RichBlockVoiceNote struct {
+	Type string `json:"type"` // always "voice_note"
+	// VoiceNote is the voice note.
+	VoiceNote Voice `json:"voice_note"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockThinking is a block with a "Thinking..." placeholder (custom HTML
+// tag <tg-thinking>). It may be used only in sendRichMessageDraft, therefore it
+// can't be received in messages.
+type RichBlockThinking struct {
+	Type string   `json:"type"` // always "thinking"
+	Text RichText `json:"text"`
 }
