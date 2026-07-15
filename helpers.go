@@ -1041,3 +1041,12 @@ func NewRichMessageDraft(chatID int64, draftID int64, html string) RichMessageDr
 		RichMessage: InputRichMessage{HTML: html},
 	}
 }
+
+// NewAnswerGuestQuery builds an answerGuestQuery config that replies to a guest
+// summon (a message with a non-empty GuestQueryID) with a single inline result.
+func NewAnswerGuestQuery(guestQueryID string, result interface{}) AnswerGuestQueryConfig {
+	return AnswerGuestQueryConfig{
+		GuestQueryID: guestQueryID,
+		Result:       result,
+	}
+}

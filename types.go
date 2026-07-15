@@ -641,6 +641,29 @@ type Message struct {
 	//
 	// optional
 	RichMessage *RichMessage `json:"rich_message,omitempty"`
+	// GuestQueryID is the unique identifier for a guest query. If non-empty,
+	// this message summoned the (guest-mode) bot in a chat it isn't a member
+	// of; reply to it with answerGuestQuery. The message belongs to the chat
+	// where the guest bot was summoned.
+	//
+	// optional
+	GuestQueryID string `json:"guest_query_id,omitempty"`
+	// GuestBotCallerUser, for a message sent by a guest bot, is the user whose
+	// original message triggered the bot's response.
+	//
+	// optional
+	GuestBotCallerUser *User `json:"guest_bot_caller_user,omitempty"`
+	// GuestBotCallerChat, for a message sent by a guest bot, is the chat whose
+	// original message triggered the bot's response.
+	//
+	// optional
+	GuestBotCallerChat *Chat `json:"guest_bot_caller_chat,omitempty"`
+}
+
+// SentGuestMessage describes an inline message sent by a guest bot.
+type SentGuestMessage struct {
+	// InlineMessageID is the identifier of the sent inline message.
+	InlineMessageID string `json:"inline_message_id"`
 }
 
 // Time converts the message timestamp into a Time.

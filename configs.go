@@ -2670,3 +2670,22 @@ func (config RichMessageDraftConfig) params() (Params, error) {
 func (config RichMessageDraftConfig) method() string {
 	return "sendRichMessageDraft"
 }
+
+// AnswerGuestQueryConfig is used to reply to a received guest message
+// (answerGuestQuery). Result is a single InlineQueryResult describing the
+// message to send; the call returns a SentGuestMessage.
+type AnswerGuestQueryConfig struct {
+	GuestQueryID string      // required
+	Result       interface{} // required, an InlineQueryResult
+}
+
+func (config AnswerGuestQueryConfig) params() (Params, error) {
+	params := make(Params)
+	params["guest_query_id"] = config.GuestQueryID
+	err := params.AddInterface("result", config.Result)
+	return params, err
+}
+
+func (config AnswerGuestQueryConfig) method() string {
+	return "answerGuestQuery"
+}
