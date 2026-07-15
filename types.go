@@ -114,6 +114,12 @@ type Update struct {
 	//
 	// optional
 	ChatJoinRequest *ChatJoinRequest `json:"chat_join_request,omitempty"`
+	// GuestMessage is a message that summoned the bot in guest mode (the bot was
+	// mentioned in, or replied to within, a chat it isn't a member of). Reply to
+	// it once with answerGuestQuery using its GuestQueryID.
+	//
+	// optional
+	GuestMessage *Message `json:"guest_message,omitempty"`
 }
 
 // SentFrom returns the user who sent an update. Can be nil, if Telegram did not provide information
@@ -130,6 +136,8 @@ func (u *Update) SentFrom() *User {
 		return u.ChosenInlineResult.From
 	case u.CallbackQuery != nil:
 		return u.CallbackQuery.From
+	case u.GuestMessage != nil:
+		return u.GuestMessage.From
 	case u.ShippingQuery != nil:
 		return u.ShippingQuery.From
 	case u.PreCheckoutQuery != nil:
