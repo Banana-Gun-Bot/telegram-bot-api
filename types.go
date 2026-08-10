@@ -1338,6 +1338,12 @@ type KeyboardButton struct {
 	// Text of the button. If none of the optional fields are used,
 	// it will be sent as a message when the button is pressed.
 	Text string `json:"text"`
+	// IconCustomEmojiID is the unique identifier of the custom emoji shown
+	// before the button's text. Usable only by bots allowed to send custom
+	// emoji in messages (Bot API 9.4).
+	//
+	// optional
+	IconCustomEmojiID string `json:"icon_custom_emoji_id,omitempty"`
 	// RequestContact if True, the user's phone number will be sent
 	// as a contact when the button is pressed.
 	// Available in private chats only.
@@ -1414,6 +1420,12 @@ type InlineKeyboardMarkup struct {
 type InlineKeyboardButton struct {
 	// Text label text on the button
 	Text string `json:"text"`
+	// IconCustomEmojiID is the unique identifier of the custom emoji shown
+	// before the button's text. Usable only by bots allowed to send custom
+	// emoji in messages (Bot API 9.4).
+	//
+	// optional
+	IconCustomEmojiID string `json:"icon_custom_emoji_id,omitempty"`
 	// URL HTTP or tg:// url to be opened when button is pressed.
 	//
 	// optional
