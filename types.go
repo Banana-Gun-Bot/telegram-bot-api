@@ -2023,6 +2023,32 @@ type InputMediaAudio struct {
 }
 
 // InputMediaDocument is a general file to send as part of a media group.
+// InputMediaVoiceNote represents a voice note to be sent.
+type InputMediaVoiceNote struct {
+	// Type of the media, must be voice_note.
+	Type string `json:"type"`
+	// Media is the file to send: a file_id, an HTTP URL, or
+	// attach://<file_attach_name> for a file uploaded with the request.
+	Media string `json:"media"`
+	// Caption of the voice message, 0-1024 characters after entities parsing.
+	//
+	// optional
+	Caption string `json:"caption,omitempty"`
+	// ParseMode is the mode for parsing entities in the caption.
+	//
+	// optional
+	ParseMode string `json:"parse_mode,omitempty"`
+	// CaptionEntities is the list of special entities in the caption, which
+	// can be specified instead of ParseMode.
+	//
+	// optional
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+	// Duration of the voice message in seconds.
+	//
+	// optional
+	Duration int `json:"duration,omitempty"`
+}
+
 type InputMediaDocument struct {
 	BaseInputMedia
 	// Thumbnail of the file sent; can be ignored if thumbnail generation for
@@ -3433,6 +3459,319 @@ type InputRichMessage struct {
 	//
 	// optional
 	SkipEntityDetection bool `json:"skip_entity_detection,omitempty"`
+	// Blocks is the content of the rich message described as a list of blocks
+	// (Bot API 10.2). Each element is one of the InputRichBlock* types. Unlike
+	// HTML or Markdown, a block carries its structure as fields, so nothing
+	// depends on which tags and attributes the server-side parser models.
+	//
+	// optional
+	Blocks []InputRichBlock `json:"blocks,omitempty"`
+	// Media is the list of media referenced from the markdown or html fields
+	// using tg://photo?id=, tg://video?id= and similar links (Bot API 10.2).
+	//
+	// optional
+	Media []InputRichMessageMedia `json:"media,omitempty"`
+}
+
+// InputRichBlock is one block of an outgoing rich message. It is polymorphic:
+// assign any of the InputRichBlock* structs below, each carrying its own Type
+// discriminator.
+type InputRichBlock = interface{}
+
+// InputRichMessageMedia describes a media element embedded in an outgoing rich
+// message and referenced from its html or markdown by id.
+type InputRichMessageMedia struct {
+	// ID is the identifier the html/markdown refers to, e.g. tg://photo?id=ID.
+	ID string `json:"id"`
+	// Media is one of InputMediaAnimation, InputMediaAudio, InputMediaPhoto,
+	// InputMediaVideo or InputMediaVoiceNote.
+	Media interface{} `json:"media"`
+}
+
+// RichTextOf wraps a value as a RichText node for sending. RichText is
+// polymorphic -- a plain String, an Array of RichText, or one of the RichText*
+// structs -- and is carried as raw JSON, so this marshals whichever form the
+// caller passes:
+//
+//	RichTextOf("BONK")                       // plain text
+//	RichTextOf(RichTextBold{...})            // a formatted node
+//	RichTextOf([]interface{}{icon, RichTextUrl{...}}) // a run of nodes
+//
+// A value that cannot be marshalled yields a JSON null, which the server reads
+// as an absent text rather than failing the whole message.
+func RichTextOf(value interface{}) RichText {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return RichText("null")
+	}
+
+	return RichText(encoded)
+}
+
+// ---------------------------------------------------------------------------
+// Outgoing rich blocks (Bot API 10.2). InputRichMessage.Blocks takes these
+// instead of an html/markdown string: a block carries its structure as typed
+// fields, so nothing depends on which tags and attributes the server-side HTML
+// parser happens to model.
+// ---------------------------------------------------------------------------
+
+// InputRichBlockParagraph a text paragraph, corresponding to the HTML tag
+// <p>.
+type InputRichBlockParagraph struct {
+	Type string `json:"type"` // always "paragraph"
+	// Text of the block
+	Text RichText `json:"text"`
+}
+
+// InputRichBlockSectionHeading a section heading, corresponding to the
+// HTML tags <h1>, <h2>, <h3>, <h4>, <h5>, or <h6>.
+type InputRichBlockSectionHeading struct {
+	Type string `json:"type"` // always "heading"
+	// Text of the block
+	Text RichText `json:"text"`
+	// Relative size of the text font; 1-6, 1 is the largest, 6 is the
+	// smallest
+	Size int `json:"size"`
+}
+
+// InputRichBlockPreformatted a preformatted text block, corresponding to
+// the nested HTML tags <pre> and <code>.
+type InputRichBlockPreformatted struct {
+	Type string `json:"type"` // always "pre"
+	// Text of the block
+	Text RichText `json:"text"`
+	// Optional. The programming language of the text
+	//
+	// optional
+	Language string `json:"language,omitempty"`
+}
+
+// InputRichBlockFooter a footer, corresponding to the HTML tag <footer>.
+type InputRichBlockFooter struct {
+	Type string `json:"type"` // always "footer"
+	// Text of the block
+	Text RichText `json:"text"`
+}
+
+// InputRichBlockDivider a divider, corresponding to the HTML tag <hr/>.
+type InputRichBlockDivider struct {
+	Type string `json:"type"` // always "divider"
+}
+
+// InputRichBlockMathematicalExpression a block with a mathematical
+// expression in LaTeX format, corresponding to the custom HTML tag
+// <tg-math-block>.
+type InputRichBlockMathematicalExpression struct {
+	Type string `json:"type"` // always "mathematical_expression"
+	// The mathematical expression in LaTeX format
+	Expression string `json:"expression"`
+}
+
+// InputRichBlockAnchor a block with an anchor, corresponding to the HTML
+// tag <a> with the attribute name.
+type InputRichBlockAnchor struct {
+	Type string `json:"type"` // always "anchor"
+	// The name of the anchor
+	Name string `json:"name"`
+}
+
+// InputRichBlockList a list of blocks, corresponding to the HTML tag <ul>
+// or <ol> with multiple nested tags <li>.
+type InputRichBlockList struct {
+	Type string `json:"type"` // always "list"
+	// Items of the list
+	Items []InputRichBlockListItem `json:"items"`
+}
+
+// InputRichBlockBlockQuotation a block quotation, corresponding to the
+// HTML tag <blockquote>.
+type InputRichBlockBlockQuotation struct {
+	Type string `json:"type"` // always "blockquote"
+	// Content of the block
+	Blocks []InputRichBlock `json:"blocks"`
+	// Optional. Credit of the block
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
+// InputRichBlockPullQuotation a quotation with centered text, loosely
+// corresponding to the HTML tag <aside>.
+type InputRichBlockPullQuotation struct {
+	Type string `json:"type"` // always "pullquote"
+	// Text of the block
+	Text RichText `json:"text"`
+	// Optional. Credit of the block
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
+// InputRichBlockCollage a collage, corresponding to the custom HTML tag
+// <tg-collage>.
+type InputRichBlockCollage struct {
+	Type string `json:"type"` // always "collage"
+	// Elements of the collage
+	Blocks []InputRichBlock `json:"blocks"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockSlideshow a slideshow, corresponding to the custom HTML
+// tag <tg-slideshow>.
+type InputRichBlockSlideshow struct {
+	Type string `json:"type"` // always "slideshow"
+	// Elements of the slideshow
+	Blocks []InputRichBlock `json:"blocks"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockTable a table, corresponding to the HTML tag <table>.
+type InputRichBlockTable struct {
+	Type string `json:"type"` // always "table"
+	// Cells of the table
+	Cells [][]RichBlockTableCell `json:"cells"`
+	// Optional. Pass True if the table has borders
+	//
+	// optional
+	IsBordered bool `json:"is_bordered,omitempty"`
+	// Optional. Pass True if the table is striped
+	//
+	// optional
+	IsStriped bool `json:"is_striped,omitempty"`
+	// Optional. Caption of the table
+	//
+	// optional
+	Caption RichText `json:"caption,omitempty"`
+}
+
+// InputRichBlockDetails an expandable block for details disclosure,
+// corresponding to the HTML tag <details>.
+type InputRichBlockDetails struct {
+	Type string `json:"type"` // always "details"
+	// Always shown summary of the block
+	Summary RichText `json:"summary"`
+	// Content of the block
+	Blocks []InputRichBlock `json:"blocks"`
+	// Optional. Pass True if the content of the block is visible by default
+	//
+	// optional
+	IsOpen bool `json:"is_open,omitempty"`
+}
+
+// InputRichBlockMap a block with a map, corresponding to the custom HTML
+// tag <tg-map>. The map's width and height must not exceed 10000 in total.
+// The width and height ratio must be at most 20.
+type InputRichBlockMap struct {
+	Type string `json:"type"` // always "map"
+	// Location of the center of the map
+	Location Location `json:"location"`
+	// Map zoom level; 0-24
+	Zoom int `json:"zoom"`
+	// Map width; 0-10000
+	Width int `json:"width"`
+	// Map height; 0-10000
+	Height int `json:"height"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockAnimation a block with an animation, corresponding to the
+// HTML tag <video>.
+type InputRichBlockAnimation struct {
+	Type string `json:"type"` // always "animation"
+	// The animation. Caption is ignored.
+	Animation InputMediaAnimation `json:"animation"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockAudio a block with a music file, corresponding to the HTML
+// tag <audio>.
+type InputRichBlockAudio struct {
+	Type string `json:"type"` // always "audio"
+	// The audio. Caption is ignored.
+	Audio InputMediaAudio `json:"audio"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockPhoto a block with a photo, corresponding to the HTML tag
+// <img>.
+type InputRichBlockPhoto struct {
+	Type string `json:"type"` // always "photo"
+	// The photo. Caption is ignored.
+	Photo InputMediaPhoto `json:"photo"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockVideo a block with a video, corresponding to the HTML tag
+// <video>.
+type InputRichBlockVideo struct {
+	Type string `json:"type"` // always "video"
+	// The video. Caption is ignored.
+	Video InputMediaVideo `json:"video"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockVoiceNote a block with a voice note, corresponding to the
+// HTML tag <audio>.
+type InputRichBlockVoiceNote struct {
+	Type string `json:"type"` // always "voice_note"
+	// The voice note. Caption is ignored.
+	VoiceNote InputMediaVoiceNote `json:"voice_note"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockThinking a block with a "Thinking..." placeholder,
+// corresponding to the custom HTML tag <tg-thinking>. The block may be
+// used only in sendRichMessageDraft, therefore it can't be received in
+// messages. See https://t.me/addemoji/AIActions for examples of custom
+// emoji that are recommended for usage in the block.
+type InputRichBlockThinking struct {
+	Type string `json:"type"` // always "thinking"
+	// Text of the block. See https://t.me/addemoji/AIActions for examples of
+	// custom emoji that are recommended for usage in the block.
+	Text RichText `json:"text"`
+}
+
+// InputRichBlockListItem an item of a list to be sent.
+type InputRichBlockListItem struct {
+	// The content of the item
+	Blocks []InputRichBlock `json:"blocks"`
+	// Optional. Pass True if the item has a checkbox
+	//
+	// optional
+	HasCheckbox bool `json:"has_checkbox,omitempty"`
+	// Optional. Pass True if the item has a checked checkbox
+	//
+	// optional
+	IsChecked bool `json:"is_checked,omitempty"`
+	// Optional. For ordered lists, the numeric value of the item label
+	//
+	// optional
+	Value int    `json:"value,omitempty"`
+	Type  string `json:"type"` // always "InputRichBlockListItem"
 }
 
 // InputRichMessageContent represents the content of a rich message to be sent
