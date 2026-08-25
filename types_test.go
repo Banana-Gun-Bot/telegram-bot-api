@@ -1,6 +1,7 @@
 package tgbotapi
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -379,3 +380,58 @@ var (
 	_ RequestFileData = (*FileID)(nil)
 	_ RequestFileData = (*fileAttach)(nil)
 )
+
+// The Bot API 10.3 receive-side fields. A wrong json tag decodes to a nil field
+// rather than an error, which reads as "the user never pressed stop" or "nobody
+// joined from a community" -- so each one is decoded from a fixture.
+
+func TestUpdateDecodesStoppedMessageGeneration(t *testing.T) {
+	var update Update
+	if err := json.Unmarshal([]byte(`{"update_id":1,"stopped_message_generation":{"chat":{"id":76918703,"type":"private"},"draft_id":7}}`), &update); err != nil {
+		t.Fatalf("decoding the update failed: %v", err)
+	}
+
+	if update.StoppedMessageGeneration == nil {
+		t.Fatal("stopped_message_generation must decode into the update")
+	}
+	if update.StoppedMessageGeneration.Chat.ID != 76918703 {
+		t.Errorf("chat id = %d, want 76918703", update.StoppedMessageGeneration.Chat.ID)
+	}
+	if update.StoppedMessageGeneration.DraftID != 7 {
+		t.Errorf("draft id = %d, want 7", update.StoppedMessageGeneration.DraftID)
+	}
+}
+
+func TestMessageDecodesCommunityChatJoined(t *testing.T) {
+	var message Message
+	if err := json.Unmarshal([]byte(`{"message_id":1,"community_chat_joined":{"community":{"id":42,"name":"Banana"}}}`), &message); err != nil {
+		t.Fatalf("decoding the message failed: %v", err)
+	}
+
+	if message.CommunityChatJoined == nil {
+		t.Fatal("community_chat_joined must decode into the message")
+	}
+	if message.CommunityChatJoined.Community.Name != "Banana" {
+		t.Errorf("community = %+v", message.CommunityChatJoined.Community)
+	}
+}
+
+func TestChatMemberDecodesCanSendWelcomeMessages(t *testing.T) {
+	var member ChatMember
+	if err := json.Unmarshal([]byte(`{"status":"administrator","can_send_welcome_messages":true}`), &member); err != nil {
+		t.Fatalf("decoding the chat member failed: %v", err)
+	}
+
+	if !member.CanSendWelcomeMessages {
+		t.Error("can_send_welcome_messages must decode into the chat member")
+	}
+
+	var rights ChatAdministratorRights
+	if err := json.Unmarshal([]byte(`{"can_send_welcome_messages":true}`), &rights); err != nil {
+		t.Fatalf("decoding the rights failed: %v", err)
+	}
+
+	if !rights.CanSendWelcomeMessages {
+		t.Error("can_send_welcome_messages must decode into the administrator rights")
+	}
+}
