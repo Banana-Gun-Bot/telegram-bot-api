@@ -1397,6 +1397,9 @@ type PromoteChatMemberConfig struct {
 	CanRestrictMembers  bool
 	CanPinMessages      bool
 	CanPromoteMembers   bool
+	// CanSendWelcomeMessages lets the administrator manage chat welcome
+	// messages, or send them directly in the case of bots (Bot API 10.3).
+	CanSendWelcomeMessages bool
 }
 
 func (config PromoteChatMemberConfig) method() string {
@@ -1420,6 +1423,7 @@ func (config PromoteChatMemberConfig) params() (Params, error) {
 	params.AddBool("can_restrict_members", config.CanRestrictMembers)
 	params.AddBool("can_pin_messages", config.CanPinMessages)
 	params.AddBool("can_promote_members", config.CanPromoteMembers)
+	params.AddBool("can_send_welcome_messages", config.CanSendWelcomeMessages)
 
 	return params, nil
 }
@@ -2592,6 +2596,10 @@ type RichMessageConfig struct {
 	// DirectMessagesTopicID is the identifier of the direct messages topic to
 	// which the message will be sent; required for direct messages chats.
 	DirectMessagesTopicID int
+	// EphemeralMessageParameters, if set, sends the message as an ephemeral
+	// message shown to a single user instead of a message stored in the chat
+	// (Bot API 10.3).
+	EphemeralMessageParameters *EphemeralMessageParameters
 	// RichMessage is the message to be sent. Required.
 	RichMessage         InputRichMessage
 	DisableNotification bool
@@ -2624,6 +2632,9 @@ func (config RichMessageConfig) params() (Params, error) {
 	params.AddBool("allow_paid_broadcast", config.AllowPaidBroadcast)
 	params.AddNonEmpty("message_effect_id", config.MessageEffectID)
 
+	if err := params.AddInterface("ephemeral_message_parameters", config.EphemeralMessageParameters); err != nil {
+		return params, err
+	}
 	if err := params.AddInterface("rich_message", config.RichMessage); err != nil {
 		return params, err
 	}
@@ -2654,6 +2665,14 @@ type RichMessageDraftConfig struct {
 	DraftID int64
 	// RichMessage is the partial message to be streamed. Required.
 	RichMessage InputRichMessage
+	// CanStop shows the user a button that stops further drafts (Bot API
+	// 10.3). Pressing it delivers an Update with StoppedMessageGeneration set.
+	CanStop bool
+	// KeepOnStop keeps the draft in the chat when that button is pressed (Bot
+	// API 10.3). The draft still disappears after a short time or once the bot
+	// sends a message, so preserving the partial text means sending it as a
+	// new message.
+	KeepOnStop bool
 }
 
 func (config RichMessageDraftConfig) params() (Params, error) {
@@ -2662,6 +2681,8 @@ func (config RichMessageDraftConfig) params() (Params, error) {
 	params.AddNonZero64("chat_id", config.ChatID)
 	params.AddNonZero("message_thread_id", config.ThreadID)
 	params.AddNonZero64("draft_id", config.DraftID)
+	params.AddBool("can_stop", config.CanStop)
+	params.AddBool("keep_on_stop", config.KeepOnStop)
 	err := params.AddInterface("rich_message", config.RichMessage)
 
 	return params, err

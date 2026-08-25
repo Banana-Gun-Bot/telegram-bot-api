@@ -120,6 +120,11 @@ type Update struct {
 	//
 	// optional
 	GuestMessage *Message `json:"guest_message,omitempty"`
+	// StoppedMessageGeneration is a user pressing the button that stops further
+	// drafts, offered by a draft sent with CanStop set.
+	//
+	// optional
+	StoppedMessageGeneration *MessageGenerationStopped `json:"stopped_message_generation,omitempty"`
 }
 
 // SentFrom returns the user who sent an update. Can be nil, if Telegram did not provide information
@@ -639,6 +644,11 @@ type Message struct {
 	//
 	// optional
 	WebAppData *WebAppData `json:"web_app_data,omitempty"`
+	// CommunityChatJoined is a service message: a user from a community joined
+	// the chat.
+	//
+	// optional
+	CommunityChatJoined *CommunityChatJoined `json:"community_chat_joined,omitempty"`
 	// ReplyMarkup is the Inline keyboard attached to the message.
 	// login_url buttons are represented as ordinary url buttons.
 	//
@@ -1252,6 +1262,21 @@ type VideoChatParticipantsInvited struct {
 	Users []User `json:"users,omitempty"`
 }
 
+// Community represents a community, a group of chats (Bot API 10.3).
+type Community struct {
+	// ID is the unique identifier for this community.
+	ID int64 `json:"id"`
+	// Name of the community.
+	Name string `json:"name"`
+}
+
+// CommunityChatJoined represents a service message about a chat being joined by
+// a user from a community (Bot API 10.3).
+type CommunityChatJoined struct {
+	// Community from which the chat was joined.
+	Community Community `json:"community"`
+}
+
 // UserProfilePhotos contains a set of user profile photos.
 type UserProfilePhotos struct {
 	// TotalCount total number of profile pictures the target user has
@@ -1328,6 +1353,12 @@ type ReplyKeyboardMarkup struct {
 	//
 	// optional
 	Selective bool `json:"selective,omitempty"`
+	// ForceReply, if true, shows the reply interface to the user, as if they
+	// had manually selected the bot's message and tapped 'Reply' (Bot API
+	// 10.3).
+	//
+	// optional
+	ForceReply bool `json:"force_reply,omitempty"`
 }
 
 // KeyboardButton represents one button of the reply keyboard. For simple text
@@ -1408,6 +1439,12 @@ type InlineKeyboardMarkup struct {
 	// InlineKeyboard array of button rows, each represented by an Array of
 	// InlineKeyboardButton objects
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
+	// ForceReply, if true, shows the reply interface to the user, as if they
+	// had manually selected the bot's message and tapped 'Reply'. The value
+	// cannot be changed when the inline keyboard is edited (Bot API 10.3).
+	//
+	// optional
+	ForceReply bool `json:"force_reply,omitempty"`
 }
 
 // InlineKeyboardButton represents one button of an inline keyboard. You must
@@ -1480,7 +1517,16 @@ type InlineKeyboardButton struct {
 	//
 	// optional
 	Style *string `json:"style,omitempty"`
+	// Disabled, if set, makes the button do nothing when it is pressed
+	// (Bot API 10.3).
+	//
+	// optional
+	Disabled *DisabledButton `json:"disabled,omitempty"`
 }
+
+// DisabledButton represents a disabled button which does nothing. It holds no
+// information -- a non-nil value is the whole signal (Bot API 10.3).
+type DisabledButton struct{}
 
 // LoginURL represents a parameter of the inline keyboard button used to
 // automatically authorize a user. Serves as a great replacement for the
@@ -1645,6 +1691,10 @@ type ChatAdministratorRights struct {
 	CanPostMessages     bool `json:"can_post_messages"`
 	CanEditMessages     bool `json:"can_edit_messages"`
 	CanPinMessages      bool `json:"can_pin_messages"`
+	// CanSendWelcomeMessages is true, if the administrator can manage chat
+	// welcome messages or directly send them in the case of bots (Bot API
+	// 10.3).
+	CanSendWelcomeMessages bool `json:"can_send_welcome_messages"`
 }
 
 // ChatMember contains information about one member of a chat.
@@ -1737,6 +1787,12 @@ type ChatMember struct {
 	//
 	// optional
 	CanPinMessages bool `json:"can_pin_messages,omitempty"`
+	// CanSendWelcomeMessages administrators only.
+	// True, if the administrator can manage chat welcome messages or directly
+	// send them in the case of bots
+	//
+	// optional
+	CanSendWelcomeMessages bool `json:"can_send_welcome_messages,omitempty"`
 	// IsMember is true, if the user is a member of the chat at the moment of
 	// the request
 	IsMember bool `json:"is_member"`
@@ -1814,6 +1870,22 @@ type ChatJoinRequest struct {
 	//
 	// optional
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
+}
+
+// MessageGenerationStopped describes an update about a user stopping message
+// generation (Bot API 10.3). It arrives once the user presses the stop button
+// that RichMessageDraftConfig.CanStop asks for; the draft itself is kept in the
+// chat only if KeepOnStop was set.
+type MessageGenerationStopped struct {
+	// Chat in which the message is generated.
+	Chat Chat `json:"chat"`
+	// MessageThreadID is the unique identifier of the message thread in which
+	// the message is generated.
+	//
+	// optional
+	MessageThreadID int `json:"message_thread_id,omitempty"`
+	// DraftID is the unique identifier of the message draft which was stopped.
+	DraftID int64 `json:"draft_id"`
 }
 
 // ChatPermissions describes actions that a non-administrator user is
@@ -3409,6 +3481,28 @@ type PreCheckoutQuery struct {
 	OrderInfo *OrderInfo `json:"order_info,omitempty"`
 }
 
+// EphemeralMessageParameters describes an ephemeral message to send (Bot API
+// 10.3). An ephemeral message is shown to a single user and is not stored in
+// the chat, so delivery is not guaranteed -- especially while the user is
+// offline. sendRichMessage takes it through RichMessageConfig.
+type EphemeralMessageParameters struct {
+	// ReceiverUserID is the identifier of the user who will receive the
+	// message.
+	ReceiverUserID int64 `json:"receiver_user_id"`
+	// CallbackQueryID is the identifier of the callback query which triggered
+	// the message, if any.
+	//
+	// optional
+	CallbackQueryID string `json:"callback_query_id,omitempty"`
+	// ReplaceCallbackQueryMessage, if true, shows the ephemeral message in
+	// place of the original message. It must stay false for callback queries
+	// that came from an ephemeral message -- those are edited with the regular
+	// editEphemeralMessage methods instead.
+	//
+	// optional
+	ReplaceCallbackQueryMessage bool `json:"replace_callback_query_message,omitempty"`
+}
+
 // ---------------------------------------------------------------------------
 // Rich Messages (Bot API 10.1). Sending is done through InputRichMessage using
 // HTML or Markdown; the received content graph (RichText / RichBlock) is kept
@@ -3481,10 +3575,13 @@ type InputRichBlock = interface{}
 // InputRichMessageMedia describes a media element embedded in an outgoing rich
 // message and referenced from its html or markdown by id.
 type InputRichMessageMedia struct {
-	// ID is the identifier the html/markdown refers to, e.g. tg://photo?id=ID.
+	// ID is the identifier the html/markdown refers to, through a
+	// tg://photo?id=ID, tg://video?id=ID, tg://document?id=ID or
+	// tg://audio?id=ID link. 1-64 characters of A-Z, a-z, 0-9, _ and - only.
 	ID string `json:"id"`
-	// Media is one of InputMediaAnimation, InputMediaAudio, InputMediaPhoto,
-	// InputMediaVideo or InputMediaVoiceNote.
+	// Media is one of InputMediaAnimation, InputMediaAudio, InputMediaDocument,
+	// InputMediaPhoto, InputMediaVideo or InputMediaVoiceNote. General files
+	// (tg://document?id=) are accepted since Bot API 10.3.
 	Media interface{} `json:"media"`
 }
 
@@ -3506,6 +3603,71 @@ func RichTextOf(value interface{}) RichText {
 	}
 
 	return RichText(encoded)
+}
+
+// RichMessageButton represents a button in a rich message (Bot API 10.3).
+// Exactly one of the fields other than Text and Style describes what the button
+// does.
+type RichMessageButton struct {
+	// Text of the button. It may contain only plain text, RichTextCustomEmoji
+	// and RichTextDateTime entities.
+	Text RichText `json:"text"`
+	// Style of the button; one of "danger" (red), "success" (green), "primary"
+	// (blue) or "link" (shown as a regular link without borders). If omitted,
+	// an app-specific style is used. The "link" style is allowed only for
+	// callback buttons.
+	//
+	// optional
+	Style string `json:"style,omitempty"`
+	// URL is an HTTP or tg:// URL to be opened when the button is pressed.
+	//
+	// optional
+	URL string `json:"url,omitempty"`
+	// CallbackData is the data to be sent in a callback query to the bot when
+	// the button is pressed, 1-64 bytes.
+	//
+	// optional
+	CallbackData string `json:"callback_data,omitempty"`
+	// WebApp describes the Web App launched when the user presses the button.
+	// Private chats only.
+	//
+	// optional
+	WebApp *WebAppInfo `json:"web_app,omitempty"`
+	// LoginURL is an HTTPS URL used to automatically authorize the user. Not
+	// supported for ephemeral messages.
+	//
+	// optional
+	LoginURL *LoginURL `json:"login_url,omitempty"`
+	// SwitchInlineQuery prompts the user to pick a chat and inserts the bot's
+	// username and this inline query there. It is a pointer because an empty
+	// query is meaningful -- it inserts the username alone -- and must stay
+	// distinguishable from an unset field.
+	//
+	// optional
+	SwitchInlineQuery *string `json:"switch_inline_query,omitempty"`
+	// SwitchInlineQueryCurrentChat inserts the bot's username and this inline
+	// query in the current chat's input field. Pointer for the same reason as
+	// SwitchInlineQuery.
+	//
+	// optional
+	SwitchInlineQueryCurrentChat *string `json:"switch_inline_query_current_chat,omitempty"`
+	// SwitchInlineQueryChosenChat is a SwitchInlineQueryChosenChat object,
+	// which this library does not model yet; pass a value carrying query,
+	// allow_user_chats, allow_bot_chats, allow_group_chats and
+	// allow_channel_chats.
+	//
+	// optional
+	SwitchInlineQueryChosenChat interface{} `json:"switch_inline_query_chosen_chat,omitempty"`
+	// CopyText is a CopyTextButton object, which this library does not model
+	// yet; pass a value carrying text, the 1-256 characters to be copied to the
+	// clipboard.
+	//
+	// optional
+	CopyText interface{} `json:"copy_text,omitempty"`
+	// Disabled, if set, makes the button do nothing when it is pressed.
+	//
+	// optional
+	Disabled *DisabledButton `json:"disabled,omitempty"`
 }
 
 // ---------------------------------------------------------------------------
@@ -3595,6 +3757,20 @@ type InputRichBlockBlockQuotation struct {
 	Credit RichText `json:"credit,omitempty"`
 }
 
+// InputRichBlockExpandableBlockQuotation a collapsible block quotation,
+// corresponding to the HTML tag <blockquote> with the custom attribute
+// "collapsed" (Bot API 10.3). Unlike InputRichBlockBlockQuotation it carries
+// flat text rather than nested blocks.
+type InputRichBlockExpandableBlockQuotation struct {
+	Type string `json:"type"` // always "expandable_blockquote"
+	// Content of the block
+	Text RichText `json:"text"`
+	// Optional. Credit of the block
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
 // InputRichBlockPullQuotation a quotation with centered text, loosely
 // corresponding to the HTML tag <aside>.
 type InputRichBlockPullQuotation struct {
@@ -3644,6 +3820,11 @@ type InputRichBlockTable struct {
 	//
 	// optional
 	IsStriped bool `json:"is_striped,omitempty"`
+	// Optional. Pass True if table cells must have smaller indents (Bot API
+	// 10.3)
+	//
+	// optional
+	IsCompact bool `json:"is_compact,omitempty"`
 	// Optional. Caption of the table
 	//
 	// optional
@@ -3683,6 +3864,19 @@ type InputRichBlockMap struct {
 	Caption *RichBlockCaption `json:"caption,omitempty"`
 }
 
+// InputRichBlockButtons a block containing a list of buttons shown in one
+// row, corresponding to the custom HTML tag <tg-button-row> (Bot API 10.3).
+type InputRichBlockButtons struct {
+	Type string `json:"type"` // always "buttons"
+	// List of 1-8 buttons to send
+	Buttons []RichMessageButton `json:"buttons"`
+	// Optional. Horizontal alignment of the buttons; one of "left", "center"
+	// or "right"
+	//
+	// optional
+	Align string `json:"align,omitempty"`
+}
+
 // InputRichBlockAnimation a block with an animation, corresponding to the
 // HTML tag <video>.
 type InputRichBlockAnimation struct {
@@ -3701,6 +3895,18 @@ type InputRichBlockAudio struct {
 	Type string `json:"type"` // always "audio"
 	// The audio. Caption is ignored.
 	Audio InputMediaAudio `json:"audio"`
+	// Optional. Caption of the block
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// InputRichBlockDocument a block with a general file, corresponding to the
+// custom HTML tag <tg-document> (Bot API 10.3).
+type InputRichBlockDocument struct {
+	Type string `json:"type"` // always "document"
+	// The document. Caption is ignored.
+	Document InputMediaDocument `json:"document"`
 	// Optional. Caption of the block
 	//
 	// optional
@@ -3933,6 +4139,13 @@ type RichTextBotCommand struct {
 	BotCommand string `json:"bot_command"`
 }
 
+// RichTextButton is a button (Bot API 10.3).
+type RichTextButton struct {
+	Type string `json:"type"` // always "button"
+	// Button is the button.
+	Button RichMessageButton `json:"button"`
+}
+
 // RichTextAnchor is an anchor.
 type RichTextAnchor struct {
 	Type string `json:"type"` // always "anchor"
@@ -4098,6 +4311,19 @@ type RichBlockBlockQuotation struct {
 	Credit RichText `json:"credit,omitempty"`
 }
 
+// RichBlockExpandableBlockQuotation is a collapsible block quotation (HTML tag
+// <blockquote> with the custom attribute "collapsed") (Bot API 10.3). Unlike
+// RichBlockBlockQuotation it carries flat text rather than nested blocks.
+type RichBlockExpandableBlockQuotation struct {
+	Type string `json:"type"` // always "expandable_blockquote"
+	// Text is the content of the block.
+	Text RichText `json:"text"`
+	// Credit of the block.
+	//
+	// optional
+	Credit RichText `json:"credit,omitempty"`
+}
+
 // RichBlockPullQuotation is a quotation with centered text (HTML tag <aside>).
 type RichBlockPullQuotation struct {
 	Type string   `json:"type"` // always "pullquote"
@@ -4143,6 +4369,10 @@ type RichBlockTable struct {
 	//
 	// optional
 	IsStriped bool `json:"is_striped,omitempty"`
+	// IsCompact is True, if table cells have smaller indents (Bot API 10.3).
+	//
+	// optional
+	IsCompact bool `json:"is_compact,omitempty"`
 	// Caption of the table.
 	//
 	// optional
@@ -4180,6 +4410,19 @@ type RichBlockMap struct {
 	Caption *RichBlockCaption `json:"caption,omitempty"`
 }
 
+// RichBlockButtons is a block containing a list of buttons shown in one row
+// (custom HTML tag <tg-button-row>) (Bot API 10.3).
+type RichBlockButtons struct {
+	Type string `json:"type"` // always "buttons"
+	// Buttons of the block.
+	Buttons []RichMessageButton `json:"buttons"`
+	// Align is the horizontal alignment of the buttons; one of "left", "center"
+	// or "right".
+	//
+	// optional
+	Align string `json:"align,omitempty"`
+}
+
 // RichBlockAnimation is a block with an animation (HTML tag <video>).
 type RichBlockAnimation struct {
 	Type string `json:"type"` // always "animation"
@@ -4200,6 +4443,18 @@ type RichBlockAudio struct {
 	Type string `json:"type"` // always "audio"
 	// Audio is the audio.
 	Audio Audio `json:"audio"`
+	// Caption of the block.
+	//
+	// optional
+	Caption *RichBlockCaption `json:"caption,omitempty"`
+}
+
+// RichBlockDocument is a block with a general file (custom HTML tag
+// <tg-document>) (Bot API 10.3).
+type RichBlockDocument struct {
+	Type string `json:"type"` // always "document"
+	// Document is the document.
+	Document Document `json:"document"`
 	// Caption of the block.
 	//
 	// optional
