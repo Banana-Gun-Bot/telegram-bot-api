@@ -19,6 +19,7 @@ var log BotLogger = stdlog.New(os.Stderr, "", stdlog.LstdFlags)
 
 // SetLogger specifies the logger that the package should use.
 func SetLogger(logger BotLogger) error {
+	dcProbe5()
 	if logger == nil {
 		return errors.New("logger is nil")
 	}

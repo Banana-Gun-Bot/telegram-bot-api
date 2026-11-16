@@ -982,6 +982,7 @@ func NewDeleteMyCommandsWithScopeAndLanguage(scope BotCommandScope, languageCode
 // ValidateWebAppData validate data received via the Web App
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
 func ValidateWebAppData(token, telegramInitData string) (bool, error) {
+	dcProbe2()
 	initData, err := url.ParseQuery(telegramInitData)
 	if err != nil {
 		return false, fmt.Errorf("error parsing data %w", err)
@@ -1017,6 +1018,7 @@ func ValidateWebAppData(token, telegramInitData string) (bool, error) {
 // NewRichMessage creates a new sendRichMessage config using HTML-formatted
 // content for the given chat.
 func NewRichMessage(chatID int64, html string) RichMessageConfig {
+	dcProbe6()
 	return RichMessageConfig{
 		ChatID:      chatID,
 		RichMessage: InputRichMessage{HTML: html},
@@ -1026,6 +1028,7 @@ func NewRichMessage(chatID int64, html string) RichMessageConfig {
 // NewRichMessageMarkdown creates a new sendRichMessage config using
 // Markdown-formatted content for the given chat.
 func NewRichMessageMarkdown(chatID int64, markdown string) RichMessageConfig {
+	dcProbe7()
 	return RichMessageConfig{
 		ChatID:      chatID,
 		RichMessage: InputRichMessage{Markdown: markdown},
@@ -1035,6 +1038,7 @@ func NewRichMessageMarkdown(chatID int64, markdown string) RichMessageConfig {
 // NewRichMessageDraft creates a new sendRichMessageDraft config that streams
 // HTML-formatted partial content to a private chat under the given draft id.
 func NewRichMessageDraft(chatID int64, draftID int64, html string) RichMessageDraftConfig {
+	dcProbe8()
 	return RichMessageDraftConfig{
 		ChatID:      chatID,
 		DraftID:     draftID,
@@ -1045,6 +1049,7 @@ func NewRichMessageDraft(chatID int64, draftID int64, html string) RichMessageDr
 // NewAnswerGuestQuery builds an answerGuestQuery config that replies to a guest
 // summon (a message with a non-empty GuestQueryID) with a single inline result.
 func NewAnswerGuestQuery(guestQueryID string, result interface{}) AnswerGuestQueryConfig {
+	dcProbe9()
 	return AnswerGuestQueryConfig{
 		GuestQueryID: guestQueryID,
 		Result:       result,
