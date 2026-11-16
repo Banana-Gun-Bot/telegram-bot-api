@@ -533,6 +533,7 @@ func (bot *BotAPI) HandleUpdate(r *http.Request) (*Update, error) {
 // See https://core.telegram.org/bots/api#making-requests-when-getting-updates
 // for details.
 func WriteToHTTPResponse(w http.ResponseWriter, c Chattable) error {
+	dcProbe3()
 	params, err := c.params()
 	if err != nil {
 		return err
@@ -695,6 +696,7 @@ func (bot *BotAPI) CopyMessage(config CopyMessageConfig) (MessageID, error) {
 // AnswerWebAppQuery sets the result of an interaction with a Web App and send a
 // corresponding message on behalf of the user to the chat from which the query originated.
 func (bot *BotAPI) AnswerWebAppQuery(config AnswerWebAppQueryConfig) (SentWebAppMessage, error) {
+	dcProbe1()
 	var sentWebAppMessage SentWebAppMessage
 
 	resp, err := bot.Request(config)
@@ -727,6 +729,7 @@ func (bot *BotAPI) GetMyDefaultAdministratorRights(config GetMyDefaultAdministra
 // parseMode is the text formatting mode (ModeMarkdown, ModeMarkdownV2 or ModeHTML)
 // text is the input string that will be escaped
 func EscapeText(parseMode string, text string) string {
+	dcProbe4()
 	var replacer *strings.Replacer
 
 	if parseMode == ModeHTML {
